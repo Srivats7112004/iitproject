@@ -1,41 +1,108 @@
-// Global variables
+// =====================
+// Globals
+// =====================
 let isCalculating = false;
 let emissionsChart = null;
+let yearsChart = null;
 
 // Theme management
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.getElementById('themeIcon');
 const body = document.documentElement;
 
-// Initialize theme
+// DOM elements
+const form = document.getElementById('emissionsForm');
+const resultsSection = document.getElementById('resultsSection');
+const submitBtn = form.querySelector('.submit-btn');
+const btnText = submitBtn.querySelector('.btn-text');
+const loadingSpinner = submitBtn.querySelector('.loading-spinner');
+
+// Form inputs
+const stateInput = document.getElementById('state');
+const vehicleTypeInput = document.getElementById('vehicleType');
+const mfgYearInput = document.getElementById('mfgYear');           // Manufacturing Year (display only)
+const scenarioYearInput = document.getElementById('scenarioYear'); // Scenario Year (drives EF)
+const distanceInput = document.getElementById('distance');
+const efficiencyInput = document.getElementById('efficiency');
+const evEfficiencyInput = document.getElementById('evEfficiency');
+const fuelTypeInput = document.getElementById('fuelType');
+
+// Result elements
+const resultsTable = document.getElementById('resultsTable').querySelector('tbody');
+const savingsMessage = document.getElementById('savingsMessage');
+const runMetaEl = document.getElementById('runMeta');
+
+// =====================
+// Theme
+// =====================
 function initializeTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  setTheme(savedTheme);
 }
 
-// Set theme
 function setTheme(theme) {
-    if (theme === 'light') {
-        body.classList.add('light-mode');
-        body.classList.remove('dark-mode');
-        themeIcon.textContent = '🌙';
-        localStorage.setItem('theme', 'light');
-    } else {
-        body.classList.add('dark-mode');
-        body.classList.remove('light-mode');
-        themeIcon.textContent = '☀️';
-        localStorage.setItem('theme', 'dark');
-    }
+  if (theme === 'light') {
+    body.classList.add('light-mode');
+    body.classList.remove('dark-mode');
+    themeIcon.textContent = '🌙';
+    localStorage.setItem('theme', 'light');
+  } else {
+    body.classList.add('dark-mode');
+    body.classList.remove('light-mode');
+    themeIcon.textContent = '☀️';
+    localStorage.setItem('theme', 'dark');
+  }
 }
 
-// Toggle theme
 function toggleTheme() {
-    const isLight = body.classList.contains('light-mode');
-    setTheme(isLight ? 'dark' : 'light');
+  const isLight = body.classList.contains('light-mode');
+  setTheme(isLight ? 'dark' : 'light');
+  refreshChartsTheme();
 }
 
-// Default emission factors
-// Units: g CO₂ per kWh (converted from your sheet's kg/kWh × 1000)
+// =====================
+// Particles (visual)
+// =====================
+function createParticles() {
+  const particlesContainer = document.getElementById('particles');
+  if (!particlesContainer) return;
+  const particleCount = 15;
+  for (let i = 0; i < particleCount; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDelay = Math.random() * 15 + 's';
+    p.style.animationDuration = (15 + Math.random() * 10) + 's';
+    particlesContainer.appendChild(p);
+  }
+}
+
+// =====================
+// Loading button state
+// =====================
+function setCalculatingState(calculating) {
+  isCalculating = calculating;
+  if (calculating) {
+    btnText.style.display = 'none';
+    loadingSpinner.style.display = 'inline-block';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.7';
+  } else {
+    loadingSpinner.style.display = 'none';
+    btnText.style.display = 'inline';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+  }
+}
+
+// =====================
+// Emission data
+// =====================
+
+// India average fallback (g/kWh)
+const INDIA_AVG_G_PER_KWH_2024 = 1327;
+
+// 2025 baseline (g CO2/kWh) = your 2024 sheet column ×1000
 const defaultStateEmissionFactor = {
   "Andaman & Nicobar Islands": 119,
   "Andhra Pradesh": 1323,
@@ -60,7 +127,7 @@ const defaultStateEmissionFactor = {
   "Punjab": 1479,
   "Rajasthan": 1280,
   "Sikkim": 37,
-  "Tamil Nadu": 1463,   // sheet label was "Tamilnadu"
+  "Tamil Nadu": 1463,
   "Telangana": 1385,
   "Tripura": 1114,
   "Uttar Pradesh": 1439,
@@ -75,340 +142,388 @@ const defaultStateEmissionFactor = {
   "Ladakh": 41,
   "Puducherry": 934
 };
-const defaultFuelEmissionFactor = {
-    petrol: 2271,
-    diesel: 2653
+
+// Multi-year EF holders
+const stateEF_2025 = defaultStateEmissionFactor;
+
+// We will load 2030 from your list (kg/kWh → ×1000)
+let stateEF_2030 = {};
+
+// 2070 = 0 for all states (as requested)
+const ZERO_FOR_ALL_STATES = Object.keys(defaultStateEmissionFactor)
+  .reduce((acc, k) => (acc[k] = 0, acc), {});
+
+const stateEmissionFactorsByYear = {
+  "2025": stateEF_2025,
+  "2030": stateEF_2030,
+  "2070": ZERO_FOR_ALL_STATES
 };
 
-// DOM elements
-const form = document.getElementById('emissionsForm');
-const resultsSection = document.getElementById('resultsSection');
-const submitBtn = form.querySelector('.submit-btn');
-const btnText = submitBtn.querySelector('.btn-text');
-const loadingSpinner = submitBtn.querySelector('.loading-spinner');
+// Consistent order to paste your 2030 list
+const STATES_UTS_ORDER = [
+  "Andaman & Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar",
+  "Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
+  "Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland",
+  "Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh",
+  "Uttarakhand","West Bengal","Chandigarh","Dadra & Nagar Haveli","Daman & Diu","Delhi",
+  "Jammu & Kashmir","Lakshadweep","Ladakh","Puducherry"
+];
 
-// Form inputs
-const stateInput = document.getElementById('state');
-const vehicleTypeInput = document.getElementById('vehicleType');
-const yearInput = document.getElementById('year');
-const distanceInput = document.getElementById('distance');
-const efficiencyInput = document.getElementById('efficiency');
-const evEfficiencyInput = document.getElementById('evEfficiency');
-const fuelTypeInput = document.getElementById('fuelType');
-
-// Result elements
-const resultsTable = document.getElementById('resultsTable').querySelector('tbody');
-const savingsMessage = document.getElementById('savingsMessage');
-
-// Enhanced particle system
-function createParticles() {
-    const particlesContainer = document.getElementById('particles');
-    const particleCount = 15;
-    
-    for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 15 + 's';
-        particle.style.animationDuration = (15 + Math.random() * 10) + 's';
-        particlesContainer.appendChild(particle);
-    }
+// Quickly load your 2030 values (kg/kWh list in the exact order above)
+function apply2030ValuesKgPerKWh(listInKgPerKWh) {
+  const map = {};
+  const n = Math.min(listInKgPerKWh.length, STATES_UTS_ORDER.length);
+  for (let i = 0; i < n; i++) {
+    const kg = Number(listInKgPerKWh[i]);
+    if (Number.isFinite(kg)) map[STATES_UTS_ORDER[i]] = Math.round(kg * 1000); // to g/kWh
+  }
+  stateEF_2030 = map;
+  stateEmissionFactorsByYear["2030"] = stateEF_2030;
 }
 
-// Loading animation
-function setCalculatingState(calculating) {
-    isCalculating = calculating;
-    
-    if (calculating) {
-        btnText.style.display = 'none';
-        loadingSpinner.style.display = 'inline-block';
-        submitBtn.disabled = true;
-        submitBtn.style.opacity = '0.7';
-    } else {
-        loadingSpinner.style.display = 'none';
-        btnText.style.display = 'inline';
-        submitBtn.disabled = false;
-        submitBtn.style.opacity = '1';
-    }
+// TODO: Paste your 2030 values (kg/kWh) in the same order and uncomment.
+// apply2030ValuesKgPerKWh([ /* 37 kg/kWh values in order */ ]);
+
+// Fuel EFs (g/L)
+const defaultFuelEmissionFactor = {
+  petrol: 2271,
+  diesel: 2653
+};
+
+// =====================
+// Helpers
+// =====================
+function normalizeScenarioYear(raw) {
+  const y = String(raw || '').trim();
+  return (y === '2030' || y === '2070') ? y : '2025';
 }
 
-// Main calculation function
+function getStateEF(state, year) {
+  const y = normalizeScenarioYear(year);
+  const map = stateEmissionFactorsByYear[y];
+  const ef = map && map[state];
+  if (ef != null) return ef;
+  return stateEF_2025[state] ?? INDIA_AVG_G_PER_KWH_2024;
+}
+
+// Converts user EV input to kWh/km; if user enters Wh/km (>5), auto-convert
+function normalizeEvEffKWhPerKm(raw) {
+  let e = Number(raw);
+  if (!Number.isFinite(e) || e <= 0) return 0;
+  return e > 5 ? e / 1000 : e;
+}
+
+// =====================
+// Validation & Form data
+// =====================
+function validateForm() {
+  const requiredFields = [
+    stateInput, vehicleTypeInput, mfgYearInput, scenarioYearInput,
+    distanceInput, efficiencyInput, evEfficiencyInput, fuelTypeInput
+  ];
+  for (let field of requiredFields) {
+    if (!field.value || (field.type === 'number' && parseFloat(field.value) <= 0)) {
+      field.focus();
+      showNotification('Please fill in all required fields with valid values.', 'error');
+      return false;
+    }
+  }
+  return true;
+}
+
+function getFormData() {
+  return {
+    state: stateInput.value,
+    vehicleType: vehicleTypeInput.value,
+    mfgYear: mfgYearInput.value,                             // shown in results
+    scenarioYear: normalizeScenarioYear(scenarioYearInput.value), // used in EF
+    distance: parseFloat(distanceInput.value),               // daily km
+    efficiency: parseFloat(efficiencyInput.value),           // km/L
+    evEfficiency: parseFloat(evEfficiencyInput.value),       // kWh/km (or Wh/km auto-converted)
+    fuelType: fuelTypeInput.value
+  };
+}
+
+// =====================
+// Core calculations
+// =====================
 function calculateEmissions(input) {
-    // State EF in g/kWh
-    const stateEF = defaultStateEmissionFactor[input.state] || INDIA_AVG_G_PER_KWH_2024;
+  // Use Scenario Year for grid EF (not Manufacturing Year)
+  const stateEF = getStateEF(input.state, input.scenarioYear);
 
-    // EV efficiency must be kWh/km. If a user enters Wh/km (e.g., 120), auto-convert.
-    let evEffKWhPerKm = Number(input.evEfficiency);
-    if (!Number.isFinite(evEffKWhPerKm) || evEffKWhPerKm <= 0) evEffKWhPerKm = 0;
-    if (evEffKWhPerKm > 5) { // heuristic: >5 is unlikely for kWh/km, assume Wh/km
-        evEffKWhPerKm = evEffKWhPerKm / 1000;
-    }
+  // EV efficiency
+  const evEffKWhPerKm = normalizeEvEffKWhPerKm(input.evEfficiency);
 
-    // EV emissions
-    const evPerKm = evEffKWhPerKm * stateEF;               // g/km
-    const annualDistanceKm = (Number(input.distance) || 0)*365;  // expected: ANNUAL km
-    const annualEvG  = evPerKm * annualDistanceKm;         // g/year (your formula)
-    const annualEvKg = annualEvG / 1000;                   // keep kg for UI compatibility
+  // Distance: daily → annual
+  const annualDistanceKm = (Number(input.distance) || 0) * 365;
 
-    // Petrol emissions (km/l to g/km), keep your 1.15 factor
-    const petrolEffKmPerL = input.vehicleType === "bus" ? 0 : Number(input.efficiency);
-    const petrol_g_per_km = petrolEffKmPerL > 0
-        ? (1 / petrolEffKmPerL) * defaultFuelEmissionFactor.petrol * 1.15
-        : 0;
-    const annualPetrolG  = petrol_g_per_km * annualDistanceKm;
-    const annualPetrolKg = annualPetrolG / 1000;
+  // EV emissions
+  const evPerKm = evEffKWhPerKm * stateEF;       // g/km
+  const annualEvG  = evPerKm * annualDistanceKm; // g/year
+  const annualEvKg = annualEvG / 1000;           // kg/year
 
-    // Diesel emissions (km/l to g/km), bus default = 2.6 km/l
-    const dieselEffKmPerL = input.vehicleType === "bus" ? 2.6 : Number(input.efficiency);
-    const diesel_g_per_km = dieselEffKmPerL > 0
-        ? (1 / dieselEffKmPerL) * defaultFuelEmissionFactor.diesel * 1.15
-        : 0;
-    const annualDieselG  = diesel_g_per_km * annualDistanceKm;
-    const annualDieselKg = annualDieselG / 1000;
+  // Petrol emissions (km/L → g/km), with 15% upstream uplift
+  const petrolEffKmPerL = input.vehicleType === "bus" ? 0 : Number(input.efficiency);
+  const petrol_g_per_km = petrolEffKmPerL > 0
+    ? (1 / petrolEffKmPerL) * defaultFuelEmissionFactor.petrol * 1.15
+    : 0;
+  const annualPetrolG  = petrol_g_per_km * annualDistanceKm;
+  const annualPetrolKg = annualPetrolG / 1000;
 
-    const results = [
-        { label: "EV",     gPerKm: evPerKm,        annualG: annualEvG,      annualKg: annualEvKg },
-        { label: "Petrol", gPerKm: petrol_g_per_km, annualG: annualPetrolG, annualKg: annualPetrolKg },
-        { label: "Diesel", gPerKm: diesel_g_per_km, annualG: annualDieselG, annualKg: annualDieselKg }
-    ];
+  // Diesel emissions (km/L → g/km). Bus default = 2.6 km/L if not given.
+  const dieselEffKmPerL = input.vehicleType === "bus"
+    ? (Number(input.efficiency) > 0 ? Number(input.efficiency) : 2.6)
+    : Number(input.efficiency);
+  const diesel_g_per_km = dieselEffKmPerL > 0
+    ? (1 / dieselEffKmPerL) * defaultFuelEmissionFactor.diesel * 1.15
+    : 0;
+  const annualDieselG  = diesel_g_per_km * annualDistanceKm;
+  const annualDieselKg = annualDieselG / 1000;
 
-    // Savings vs selected fuel, based on per-km emissions (consistent comparison)
-    const ref = input.fuelType === "petrol" ? petrol_g_per_km : diesel_g_per_km;
-    const reduction = ref > 0 ? ((ref - evPerKm) / ref) * 100 : 0;
-    const savingsMsg = reduction > 0
-        ? `Switching to EV reduces CO₂/km by ${reduction.toFixed(0)}% compared to ${input.fuelType}.`
-        : `EV emissions are not lower than ${input.fuelType} for this configuration.`;
+  const results = [
+    { label: "EV",     gPerKm: evPerKm,         annualG: annualEvG,      annualKg: annualEvKg },
+    { label: "Petrol", gPerKm: petrol_g_per_km, annualG: annualPetrolG,  annualKg: annualPetrolKg },
+    { label: "Diesel", gPerKm: diesel_g_per_km, annualG: annualDieselG,  annualKg: annualDieselKg }
+  ];
 
-    return { results, savings: savingsMsg };
+  // Savings message vs chosen fuel (per‑km basis)
+  const ref = input.fuelType === "petrol" ? petrol_g_per_km : diesel_g_per_km;
+  const reduction = ref > 0 ? ((ref - evPerKm) / ref) * 100 : 0;
+  const savingsMsg = reduction > 0
+    ? `Switching to EV reduces CO₂/km by ${reduction.toFixed(0)}% compared to ${input.fuelType}.`
+    : `EV emissions are not lower than ${input.fuelType} for this configuration.`;
+
+  return { results, savings: savingsMsg };
 }
 
-// Display results with chart and table
+// =====================
+// Results rendering
+// =====================
 function displayResults(calculationResults) {
-    const { results, savings } = calculationResults;
-    
-    // Update table
-    resultsTable.innerHTML = '';
-    results.forEach(result => {
-        const row = resultsTable.insertRow();
-        row.innerHTML = `
-            <td>${result.label}</td>
-            <td>${result.gPerKm.toFixed(2)}</td>
-            <td>${result.annualKg.toFixed(2)}</td>
-        `;
-    });
+  const { results, savings } = calculationResults;
 
-    // Update savings message
-    savingsMessage.textContent = savings;
+  // Update table
+  resultsTable.innerHTML = '';
+  results.forEach(result => {
+    const row = resultsTable.insertRow();
+    row.innerHTML = `
+      <td>${result.label}</td>
+      <td>${result.gPerKm.toFixed(2)}</td>
+      <td>${result.annualKg.toFixed(2)}</td>
+    `;
+  });
 
-    // Create/update chart
-    const ctx = document.getElementById('emissionsChart').getContext('2d');
-    
-    if (emissionsChart) {
-        emissionsChart.destroy();
-    }
+  // Update savings message
+  savingsMessage.textContent = savings;
+
+  // Run summary (includes Manufacturing Year)
+  const inputNow = getFormData();
+  if (runMetaEl) {
+    runMetaEl.textContent =
+      `State: ${inputNow.state} | Scenario: ${inputNow.scenarioYear} | Manufacturing Year: ${inputNow.mfgYear} | ` +
+      `Daily: ${distanceInput.value} km | ICE: ${efficiencyInput.value} km/L | EV: ${evEfficiencyInput.value} kWh/km`;
+  }
+
+  // Tech comparison chart
+  const techCanvas = document.getElementById('emissionsChart');
+  if (techCanvas) {
+    const ctx = techCanvas.getContext('2d');
+    if (emissionsChart) emissionsChart.destroy();
 
     const isLightMode = body.classList.contains('light-mode');
     const textColor = isLightMode ? '#2c2c2c' : '#fffbe5';
     const gridColor = isLightMode ? '#dee2e6' : '#333333';
 
     emissionsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: results.map(r => r.label),
-            datasets: [{
-                label: 'CO₂ Emissions (g/km)',
-                data: results.map(r => r.gPerKm),
-                backgroundColor: [
-                    '#ffd600',  // EV - Yellow
-                    '#333333',  // Petrol - Dark
-                    '#666666'   // Diesel - Gray
-                ],
-                borderColor: '#000000',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: {
-                        color: textColor
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
-                },
-                x: {
-                    ticks: {
-                        color: textColor
-                    },
-                    grid: {
-                        color: gridColor
-                    }
-                }
-            }
+      type: 'bar',
+      data: {
+        labels: results.map(r => r.label),
+        datasets: [{
+          label: 'CO₂ Emissions (g/km)',
+          data: results.map(r => r.gPerKm),
+          backgroundColor: ['#ffd600', '#333333', '#666666'],
+          borderColor: '#000000',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: textColor } } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+          x: { ticks: { color: textColor }, grid: { color: gridColor } }
         }
+      }
     });
+  }
 
-    // Show results section with animation
-    resultsSection.style.display = 'block';
-    resultsSection.style.opacity = '0';
-    resultsSection.style.transform = 'translateY(30px)';
-    
-    setTimeout(() => {
-        resultsSection.style.transition = 'all 0.6s ease';
-        resultsSection.style.opacity = '1';
-        resultsSection.style.transform = 'translateY(0)';
-        
-        // Scroll to results
-        resultsSection.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-}
+  // Year comparison chart
+  const yearsCanvas = document.getElementById('yearsChart');
+  if (yearsCanvas) {
+    const evEffKWhPerKm = normalizeEvEffKWhPerKm(inputNow.evEfficiency);
 
-// Form validation
-function validateForm() {
-    const requiredFields = [stateInput, vehicleTypeInput, yearInput, distanceInput, efficiencyInput, evEfficiencyInput, fuelTypeInput];
-    
-    for (let field of requiredFields) {
-        if (!field.value || (field.type === 'number' && parseFloat(field.value) <= 0)) {
-            field.focus();
-            showNotification('Please fill in all required fields with valid values.', 'error');
-            return false;
+    const years = ['2025', '2030', '2070'];
+    const evByYear = years.map(y => evEffKWhPerKm * getStateEF(inputNow.state, y));
+
+    const petrolRow = results.find(r => r.label === 'Petrol');
+    const dieselRow = results.find(r => r.label === 'Diesel');
+    const petrolKm = petrolRow ? petrolRow.gPerKm : 0;
+    const dieselKm = dieselRow ? dieselRow.gPerKm : 0;
+
+    const petrolByYear = years.map(() => petrolKm);
+    const dieselByYear = years.map(() => dieselKm);
+
+    if (yearsChart) yearsChart.destroy();
+
+    const isLightMode = body.classList.contains('light-mode');
+    const textColor = isLightMode ? '#2c2c2c' : '#fffbe5';
+    const gridColor = isLightMode ? '#dee2e6' : '#333333';
+
+    const ctxYears = yearsCanvas.getContext('2d');
+    yearsChart = new Chart(ctxYears, {
+      type: 'bar',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'EV (g/km)',     data: evByYear,     backgroundColor: '#ffd600', borderColor: '#000', borderWidth: 2 },
+          { label: 'Petrol (g/km)', data: petrolByYear, backgroundColor: '#333333', borderColor: '#000', borderWidth: 2 },
+          { label: 'Diesel (g/km)', data: dieselByYear, backgroundColor: '#666666', borderColor: '#000', borderWidth: 2 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: textColor } } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+          x: { ticks: { color: textColor }, grid: { color: gridColor } }
         }
-    }
-    return true;
+      }
+    });
+  }
+
+  // Reveal results
+  resultsSection.style.display = 'block';
+  resultsSection.style.opacity = '0';
+  resultsSection.style.transform = 'translateY(30px)';
+  setTimeout(() => {
+    resultsSection.style.transition = 'all 0.6s ease';
+    resultsSection.style.opacity = '1';
+    resultsSection.style.transform = 'translateY(0)';
+    resultsSection.scrollIntoView({ behavior: 'smooth' });
+  }, 100);
 }
 
-// Get form data
-function getFormData() {
-    return {
-        state: stateInput.value,
-        vehicleType: vehicleTypeInput.value,
-        year: yearInput.value,
-        distance: parseFloat(distanceInput.value),
-        efficiency: parseFloat(efficiencyInput.value),
-        evEfficiency: parseFloat(evEfficiencyInput.value),
-        fuelType: fuelTypeInput.value
-    };
+// Refresh chart colors after theme toggle
+function refreshChartsTheme() {
+  const isLightMode = body.classList.contains('light-mode');
+  const textColor = isLightMode ? '#2c2c2c' : '#fffbe5';
+  const gridColor = isLightMode ? '#dee2e6' : '#333333';
+
+  [emissionsChart, yearsChart].forEach(ch => {
+    if (!ch) return;
+    ch.options.plugins.legend.labels.color = textColor;
+    ch.options.scales.x.ticks.color = textColor;
+    ch.options.scales.y.ticks.color = textColor;
+    ch.options.scales.x.grid.color = gridColor;
+    ch.options.scales.y.grid.color = gridColor;
+    ch.update();
+  });
 }
 
-// Handle form submission
+// =====================
+// Form handling
+// =====================
 async function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    if (isCalculating) return;
-    
-    if (!validateForm()) return;
-    
-    setCalculatingState(true);
-    
-    try {
-        // Simulate calculation delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const formData = getFormData();
-        const results = calculateEmissions(formData);
-        
-        displayResults(results);
-        showNotification('Calculation completed successfully!', 'success');
-        
-    } catch (error) {
-        console.error('Calculation error:', error);
-        showNotification('There was an error calculating emissions. Please try again.', 'error');
-    } finally {
-        setCalculatingState(false);
-    }
+  e.preventDefault();
+  if (isCalculating) return;
+  if (!validateForm()) return;
+
+  setCalculatingState(true);
+  try {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    const formData = getFormData();
+    const results = calculateEmissions(formData);
+    displayResults(results);
+    showNotification(
+      `Calculation done for ${formData.state} (Scenario ${formData.scenarioYear}, Mfg ${formData.mfgYear}).`,
+      'success'
+    );
+  } catch (err) {
+    console.error('Calculation error:', err);
+    showNotification('There was an error calculating emissions. Please try again.', 'error');
+  } finally {
+    setCalculatingState(false);
+  }
 }
 
-// Show notification
+// =====================
+// Notifications
+// =====================
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    
-    Object.assign(notification.style, {
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        padding: '1rem 1.5rem',
-        borderRadius: '0.5rem',
-        color: '#000000',
-        fontWeight: '600',
-        zIndex: '1000',
-        opacity: '0',
-        transform: 'translateX(100%)',
-        transition: 'all 0.3s ease-out',
-        maxWidth: '400px',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
-    });
-    
-    if (type === 'success') {
-        notification.style.background = '#ffd600';
-    } else if (type === 'error') {
-        notification.style.background = '#ff6b6b';
-        notification.style.color = '#ffffff';
-    } else {
-        notification.style.background = '#ffd600';
-    }
-    
-    document.body.appendChild(notification);
-    
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+
+  Object.assign(notification.style, {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    padding: '1rem 1.5rem',
+    borderRadius: '0.5rem',
+    color: '#000000',
+    fontWeight: '600',
+    zIndex: '1000',
+    opacity: '0',
+    transform: 'translateX(100%)',
+    transition: 'all 0.3s ease-out',
+    maxWidth: '400px',
+    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+  });
+
+  if (type === 'success') {
+    notification.style.background = '#ffd600';
+  } else if (type === 'error') {
+    notification.style.background = '#ff6b6b';
+    notification.style.color = '#ffffff';
+  } else {
+    notification.style.background = '#ffd600';
+  }
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.opacity = '1';
+    notification.style.transform = 'translateX(0)';
+  }, 50);
+
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateX(100%)';
     setTimeout(() => {
-        notification.style.opacity = '1';
-        notification.style.transform = 'translateX(0)';
-    }, 50);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-        }, 300);
-    }, 4000);
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 300);
+  }, 4000);
 }
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', function() {
-    initializeTheme();
-    createParticles();
-    form.addEventListener('submit', handleFormSubmit);
-    themeToggle.addEventListener('click', toggleTheme);
-    
-    // Add hover effects to cards
-    const cards = document.querySelectorAll('.calculator-card, .chart-card, .table-card, .savings-card');
-    cards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
+// =====================
+// Init
+// =====================
+document.addEventListener('DOMContentLoaded', function () {
+  initializeTheme();
+  createParticles();
+  form.addEventListener('submit', handleFormSubmit);
+  themeToggle.addEventListener('click', toggleTheme);
+
+  // Hover lifts
+  const cards = document.querySelectorAll('.calculator-card, .chart-card, .table-card, .savings-card');
+  cards.forEach(card => {
+    card.addEventListener('mouseenter', function () {
+      this.style.transform = 'translateY(-5px)';
     });
+    card.addEventListener('mouseleave', function () {
+      this.style.transform = 'translateY(0)';
+    });
+  });
 });
-function populateStates() {
-  const stateSelect = document.getElementById('state');
-  // Remove existing options except the first placeholder
-  stateSelect.length = 1;
-
-  Object.keys(defaultStateEmissionFactor)
-    .sort((a, b) => a.localeCompare(b))
-    .forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      stateSelect.appendChild(opt);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', populateStates);
