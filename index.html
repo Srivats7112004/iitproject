@@ -1,337 +1,297 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EV vs ICEV CO₂ Emission Calculator | e-Amrit</title>
-    <meta name="description" content="Interactive CO2 emissions calculator comparing electric vehicles with ICE vehicles">
-    <meta name="author" content="e-Amrit IIT Hyderabad">
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="main.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EV vs ICEV CO₂ Emission Calculator | e-Amrit</title>
+  <meta name="description" content="Interactive CO2 emissions calculator comparing electric vehicles with ICE vehicles">
+  <meta name="author" content="e-Amrit IIT Hyderabad">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body>
-    <!-- Theme Toggle Button -->
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-        <span id="themeIcon">🌙</span>
-    </button>
+  <!-- Theme Toggle Button -->
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <span id="themeIcon">🌙</span>
+  </button>
 
-    <!-- Floating Particles -->
-    <div class="particles" id="particles"></div>
+  <!-- Floating Particles -->
+  <div class="particles" id="particles"></div>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="logo-icon">⚡</div>
-                    <div class="logo-text">
-                        <h1>EV vs ICEV CO₂ Calculator</h1>
-                        <p>e-Amrit Initiative | IIT Hyderabad</p>
-                    </div>
-                </div>
-                <nav class="nav">
-                    <a href="#" class="nav-link">Home</a>
-                    <a href="#" class="nav-link">Calculator</a>
-                    <a href="#" class="nav-link">About</a>
-                    <a href="#" class="nav-link">Contact</a>
-                </nav>
-            </div>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo-section">
+          <div class="logo-icon">⚡</div>
+          <div class="logo-text">
+            <h1>EV vs ICEV CO₂ Calculator</h1>
+            <p>e-Amrit Initiative | IIT Hyderabad</p>
+          </div>
         </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="main">
-        <div class="container">
-            <!-- Hero Section -->
-            <section class="hero">
-                <h2 class="hero-title">Compare Vehicle Emissions</h2>
-                <p class="hero-description">
-                    Calculate and compare real-world CO₂ emissions between electric vehicles and 
-                    internal combustion engine vehicles across different Indian states.
-                </p>
-            </section>
-
-            <!-- Calculator Section -->
-            <section class="calculator-section">
-                <div class="calculator-container">
-                    <div class="calculator-card">
-                        <div class="card-header">
-                            <h3 class="card-title">🧮 EV vs ICEV Emissions Calculator</h3>
-                            <p class="card-subtitle">Compare CO₂ emissions based on state-wise grid factors and vehicle efficiency</p>
-                        </div>
-                        <div class="card-content">
-                            <form id="emissionsForm" class="form">
-                                <div class="form-grid">
-                                    <div class="form-group">
-  <label for="state">State of Use</label>
-  <select id="state" name="state" required>
-    <option value="">Select state/UT</option>
-
-    <optgroup label="States">
-      <option value="Andhra Pradesh">Andhra Pradesh</option>
-      <option value="Arunachal Pradesh">Arunachal Pradesh</option>
-      <option value="Assam">Assam</option>
-      <option value="Bihar">Bihar</option>
-      <option value="Chhattisgarh">Chhattisgarh</option>
-      <option value="Goa">Goa</option>
-      <option value="Gujarat">Gujarat</option>
-      <option value="Haryana">Haryana</option>
-      <option value="Himachal Pradesh">Himachal Pradesh</option>
-      <option value="Jharkhand">Jharkhand</option>
-      <option value="Karnataka">Karnataka</option>
-      <option value="Kerala">Kerala</option>
-      <option value="Madhya Pradesh">Madhya Pradesh</option>
-      <option value="Maharashtra">Maharashtra</option>
-      <option value="Manipur">Manipur</option>
-      <option value="Meghalaya">Meghalaya</option>
-      <option value="Mizoram">Mizoram</option>
-      <option value="Nagaland">Nagaland</option>
-      <option value="Odisha">Odisha</option>
-      <option value="Punjab">Punjab</option>
-      <option value="Rajasthan">Rajasthan</option>
-      <option value="Sikkim">Sikkim</option>
-      <option value="Tamil Nadu">Tamil Nadu</option>
-      <option value="Telangana">Telangana</option>
-      <option value="Tripura">Tripura</option>
-      <option value="Uttar Pradesh">Uttar Pradesh</option>
-      <option value="Uttarakhand">Uttarakhand</option>
-      <option value="West Bengal">West Bengal</option>
-    </optgroup>
-
-    <optgroup label="Union Territories">
-      <option value="Andaman &amp; Nicobar Islands">Andaman &amp; Nicobar Islands</option>
-      <option value="Chandigarh">Chandigarh</option>
-      <option value="Dadra &amp; Nagar Haveli">Dadra &amp; Nagar Haveli</option>
-      <option value="Daman &amp; Diu">Daman &amp; Diu</option>
-      <option value="Delhi">Delhi</option>
-      <option value="Jammu &amp; Kashmir">Jammu &amp; Kashmir</option>
-      <option value="Ladakh">Ladakh</option>
-      <option value="Lakshadweep">Lakshadweep</option>
-      <option value="Puducherry">Puducherry</option>
-    </optgroup>
-  </select>
-</div>
-
-                                    <div class="form-group">
-                                        <label for="vehicleType">Vehicle Type</label>
-                                        <select id="vehicleType" name="vehicleType" required>
-                                            <option value="">Select vehicle type</option>
-                                            <option value="2W">2-Wheeler</option>
-                                            <option value="3W">3-Wheeler</option>
-                                            <option value="4W">4-Wheeler</option>
-                                            <option value="bus">Bus</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="year">Manufacturing Year</label>
-                                        <select id="year" name="year" required>
-                                            <option value="">Select year</option>
-                                            <option value="2020">2020</option>
-                                            <option value="2021">2021</option>
-                                            <option value="2022">2022</option>
-                                            <option value="2023">2023</option>
-                                            <option value="2024">2024</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="distance">Daily Distance (km)</label>
-                                        <input type="number" id="distance" name="distance" placeholder="Enter daily distance" min="1" max="500" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="efficiency">ICE Efficiency (km/l)</label>
-                                        <input type="number" id="efficiency" name="efficiency" placeholder="Enter fuel efficiency" min="1" max="50" step="0.1" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="evEfficiency">EV Efficiency (kWh/km)</label>
-                                        <input type="number" id="evEfficiency" name="evEfficiency" placeholder="Enter EV efficiency" min="0.05" max="1" step="0.01" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="fuelType">Primary Fuel Comparison</label>
-                                        <select id="fuelType" name="fuelType" required>
-                                            <option value="">Select fuel type</option>
-                                            <option value="petrol">Petrol</option>
-                                            <option value="diesel">Diesel</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="submit-btn">
-                                    <span class="btn-text">🧮 Calculate Emissions</span>
-                                    <div class="loading-spinner" style="display: none;"></div>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Results Section -->
-            <section id="resultsSection" class="results-section" style="display: none;">
-                <div class="results-header">
-                    <h3>Emission Comparison Results</h3>
-                    <p>Based on your inputs, here's how different vehicle technologies compare</p>
-                </div>
-                
-                <div class="results-grid">
-                    <!-- Chart Section -->
-                    <div class="chart-card">
-                        <h4>📊 Emissions Comparison</h4>
-                        <canvas id="emissionsChart" width="400" height="300"></canvas>
-                    </div>
-
-                    <!-- Data Table -->
-                    <div class="table-card">
-                        <h4>📋 Detailed Comparison</h4>
-                        <div class="table-container">
-                            <table id="resultsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Technology</th>
-                                        <th>g CO₂/km</th>
-                                        <th>kg CO₂/year</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Data will be populated by JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Savings Card -->
-                    <div class="savings-card">
-                        <h4>💡 Emission Savings</h4>
-                        <div class="savings-content">
-                            <div class="savings-value" id="savingsMessage">
-                                Calculate to see potential savings
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </main>
-<!-- FAQ Section -->
-<section id="faq" class="faq-section">
-  <div class="container">
-    <div class="calculator-card faq-card">
-      <div class="card-header">
-        <h3 class="card-title">❓ FAQ & Methodology</h3>
-        <p class="card-subtitle">Formulas used, units to enter, and typical values</p>
-      </div>
-
-      <div class="card-content">
-        <div class="faq-list">
-
-          <details open class="faq-item">
-            <summary>What should I enter in each field?</summary>
-            <ul>
-              <li><b>State of Use</b>: Choose your State/UT. This selects the grid CO₂ factor (g CO₂/kWh) for EVs.</li>
-              <li><b>Vehicle Type</b>: 2W, 3W, 4W, or Bus. Affects defaults (e.g., bus diesel = 2.6 km/L if not provided).</li>
-              <li><b>Manufacturing Year</b>: Currently cosmetic unless you wire year-based grid factors.</li>
-              <li><b>Daily Distance (km)</b>: Your average daily driving. The calculator multiplies by 365 to estimate annual.
-                <br>Tip: If you’ve switched your code to accept annual distance, just enter annual km instead and ignore “daily”.</li>
-              <li><b>ICE Efficiency (km/L)</b>: Real-world fuel economy of your petrol/diesel vehicle.</li>
-              <li><b>EV Efficiency (kWh/km)</b>: Energy per km. If you have Wh/km, divide by 1000 (e.g., 120 Wh/km → 0.12 kWh/km).</li>
-              <li><b>Primary Fuel Comparison</b>: Choose Petrol or Diesel for the ICE comparison.</li>
-            </ul>
-          </details>
-
-          <details class="faq-item" open>
-            <summary>How do you calculate EV emissions?</summary>
-            <p>
-              Per‑km emissions (g CO₂/km):<br>
-              <code>EV g/km = EV energy (kWh/km) × State EF (g CO₂/kWh)</code>
-            </p>
-            <p>
-              Annual emissions:<br>
-              <code>EV g/year = (EV g/km) × Annual Distance (km)</code><br>
-              If you entered <b>daily</b> distance: <code>Annual Distance = Daily × 365</code>
-            </p>
-          </details>
-
-          <details class="faq-item" open>
-            <summary>How do you calculate Petrol/Diesel emissions?</summary>
-            <p>
-              Fuel CO₂ per km (g CO₂/km):<br>
-              <code>g/km = (1 / (km/L)) × (Fuel EF g/L) × 1.15</code>
-            </p>
-            <ul>
-              <li>Fuel EF (tailpipe): Petrol = 2271 g/L, Diesel = 2653 g/L</li>
-              <li>× 1.15 adds 15% for upstream emissions (refining, transport). Adjust if you prefer a different uplift.</li>
-              <li>Annual emissions: <code>g/year = (g/km) × Annual Distance (km)</code></li>
-              <li>Bus default: if Vehicle Type = “bus” and no value given, Diesel efficiency defaults to 2.6 km/L.</li>
-            </ul>
-          </details>
-
-          <details class="faq-item">
-            <summary>What grid factor (State EF) do you use?</summary>
-            <ul>
-              <li>Unit: <b>g CO₂/kWh</b></li>
-              <li>Source: your sheet column “EF CO2 (kg/kWh) 2024 (new EF/λ)” converted ×1000 to g/kWh.</li>
-              <li>Fallback (India average): ~1327 g/kWh if a state factor is missing.</li>
-            </ul>
-          </details>
-
-          <details class="faq-item">
-            <summary>What are realistic values to enter?</summary>
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Vehicle</th>
-                    <th>Daily Distance (km)</th>
-                    <th>ICE Efficiency (km/L)</th>
-                    <th>EV Efficiency (kWh/km)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr><td>2‑Wheeler</td><td>15–35</td><td>40–55 (petrol)</td><td>0.025–0.040</td></tr>
-                  <tr><td>3‑Wheeler</td><td>40–80</td><td>20–30 (CNG/diesel equiv.)</td><td>0.060–0.090</td></tr>
-                  <tr><td>4‑Wheeler (compact)</td><td>20–60</td><td>12–18 (petrol), 15–22 (diesel)</td><td>0.12–0.15</td></tr>
-                  <tr><td>4‑Wheeler (SUV)</td><td>20–60</td><td>8–14 (petrol), 12–18 (diesel)</td><td>0.15–0.20</td></tr>
-                  <tr><td>City Bus</td><td>150–250</td><td>2.0–3.5 (diesel)</td><td>1.0–1.4</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p style="margin-top: .75rem">
-              Example (4‑W in Telangana): EV 0.12 kWh/km → ~166 g/km (State EF ≈ 1385 g/kWh).
-              Petrol 14 km/L → ~187 g/km. EV ≈ 11% lower per‑km.
-            </p>
-          </details>
-
-          <details class="faq-item">
-            <summary>Common pitfalls</summary>
-            <ul>
-              <li><b>Units</b>: EV must be kWh/km (not Wh/km). If you only know Wh/km, divide by 1000.</li>
-              <li><b>Distance</b>: If your field says “Daily”, the tool multiplies by 365. If you switched to annual in code, enter annual km.</li>
-              <li><b>Vehicle mismatch</b>: Comparing a diesel bus vs petrol in the selector can give odd results—pick the relevant fuel.</li>
-            </ul>
-          </details>
-
-        </div>
+        <nav class="nav">
+          <a href="#" class="nav-link">Home</a>
+          <a href="#" class="nav-link">Calculator</a>
+          <a href="#faq" class="nav-link">FAQ</a>
+          <a href="#" class="nav-link">Contact</a>
+        </nav>
       </div>
     </div>
-  </div>
-</section>
-    <!-- Footer -->
-    <footer class="footer">
-        
-            
-        </div>
-    </footer>
+  </header>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Hero Section -->
+      <section class="hero">
+        <h2 class="hero-title">Compare Vehicle Emissions</h2>
+        <p class="hero-description">
+          Calculate and compare real-world CO₂ emissions between electric vehicles and 
+          internal combustion engine vehicles across different Indian states.
+        </p>
+      </section>
+
+      <!-- Calculator Section -->
+      <section class="calculator-section">
+        <div class="calculator-container">
+          <div class="calculator-card">
+            <div class="card-header">
+              <h3 class="card-title">🧮 EV vs ICEV Emissions Calculator</h3>
+              <p class="card-subtitle">Compare CO₂ emissions based on state-wise grid factors and vehicle efficiency</p>
+            </div>
+
+            <div class="card-content">
+              <form id="emissionsForm" class="form">
+                <div class="form-grid">
+                  <!-- State -->
+                  <div class="form-group">
+                    <label for="state">State of Use</label>
+                    <select id="state" name="state" required>
+                      <option value="">Select state/UT</option>
+                      <optgroup label="States">
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                        <option value="Assam">Assam</option>
+                        <option value="Bihar">Bihar</option>
+                        <option value="Chhattisgarh">Chhattisgarh</option>
+                        <option value="Goa">Goa</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Haryana">Haryana</option>
+                        <option value="Himachal Pradesh">Himachal Pradesh</option>
+                        <option value="Jharkhand">Jharkhand</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Kerala">Kerala</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Manipur">Manipur</option>
+                        <option value="Meghalaya">Meghalaya</option>
+                        <option value="Mizoram">Mizoram</option>
+                        <option value="Nagaland">Nagaland</option>
+                        <option value="Odisha">Odisha</option>
+                        <option value="Punjab">Punjab</option>
+                        <option value="Rajasthan">Rajasthan</option>
+                        <option value="Sikkim">Sikkim</option>
+                        <option value="Tamil Nadu">Tamil Nadu</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="Tripura">Tripura</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                        <option value="Uttarakhand">Uttarakhand</option>
+                        <option value="West Bengal">West Bengal</option>
+                      </optgroup>
+                      <optgroup label="Union Territories">
+                        <option value="Andaman &amp; Nicobar Islands">Andaman &amp; Nicobar Islands</option>
+                        <option value="Chandigarh">Chandigarh</option>
+                        <option value="Dadra &amp; Nagar Haveli">Dadra &amp; Nagar Haveli</option>
+                        <option value="Daman &amp; Diu">Daman &amp; Diu</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Jammu &amp; Kashmir">Jammu &amp; Kashmir</option>
+                        <option value="Ladakh">Ladakh</option>
+                        <option value="Lakshadweep">Lakshadweep</option>
+                        <option value="Puducherry">Puducherry</option>
+                      </optgroup>
+                    </select>
+                  </div>
+
+                  <!-- Vehicle Type -->
+                  <div class="form-group">
+                    <label for="vehicleType">Vehicle Type</label>
+                    <select id="vehicleType" name="vehicleType" required>
+                      <option value="">Select vehicle type</option>
+                      <option value="2W">2-Wheeler</option>
+                      <option value="3W">3-Wheeler</option>
+                      <option value="4W">4-Wheeler</option>
+                      <option value="bus">Bus</option>
+                    </select>
+                  </div>
+
+                  <!-- Manufacturing Year (displayed in results) -->
+                  <div class="form-group">
+                    <label for="mfgYear">Manufacturing Year</label>
+                    <select id="mfgYear" name="mfgYear" required>
+                      <option value="">Select year</option>
+                      <option value="2020">2020</option>
+                      <option value="2021">2021</option>
+                      <option value="2022">2022</option>
+                      <option value="2023">2023</option>
+                      <option value="2024" selected>2024</option>
+                      <option value="2025">2025</option>
+                    </select>
+                  </div>
+
+                  <!-- Scenario Year (drives grid EF) -->
+                  <div class="form-group">
+                    <label for="scenarioYear">Scenario Year</label>
+                    <select id="scenarioYear" name="scenarioYear" required>
+                      <option value="">Select scenario</option>
+                      <option value="2025" selected>2025</option>
+                      <option value="2030">2030</option>
+                      <option value="2070">2070</option>
+                    </select>
+                  </div>
+
+                  <!-- Distance -->
+                  <div class="form-group">
+                    <label for="distance">Daily Distance (km)</label>
+                    <input type="number" id="distance" name="distance" placeholder="Enter daily distance" min="1" max="500" required>
+                  </div>
+
+                  <!-- ICE Efficiency -->
+                  <div class="form-group">
+                    <label for="efficiency">ICE Efficiency (km/l)</label>
+                    <input type="number" id="efficiency" name="efficiency" placeholder="Enter fuel efficiency" min="1" max="50" step="0.1" required>
+                  </div>
+
+                  <!-- EV Efficiency -->
+                  <div class="form-group">
+                    <label for="evEfficiency">EV Efficiency (kWh/km)</label>
+                    <input type="number" id="evEfficiency" name="evEfficiency" placeholder="Enter EV efficiency" min="0.05" max="1" step="0.01" required>
+                  </div>
+
+                  <!-- Fuel Type -->
+                  <div class="form-group">
+                    <label for="fuelType">Primary Fuel Comparison</label>
+                    <select id="fuelType" name="fuelType" required>
+                      <option value="">Select fuel type</option>
+                      <option value="petrol">Petrol</option>
+                      <option value="diesel">Diesel</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                  <span class="btn-text">🧮 Calculate Emissions</span>
+                  <div class="loading-spinner" style="display: none;"></div>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section id="resultsSection" class="results-section" style="display: none;">
+        <div class="results-header">
+          <h3>Emission Comparison Results</h3>
+          <p>Based on your inputs, here's how different vehicle technologies compare</p>
+          <p id="runMeta"></p><!-- run summary line -->
+        </div>
+
+        <div class="results-grid">
+          <!-- Tech Comparison Chart -->
+          <div class="chart-card">
+            <h4>📊 Emissions Comparison</h4>
+            <canvas id="emissionsChart" width="400" height="300"></canvas>
+          </div>
+
+          <!-- Year Comparison Chart -->
+          <div class="chart-card">
+            <h4>⏳ Emissions by Year (2025 / 2030 / 2070)</h4>
+            <canvas id="yearsChart" width="400" height="300"></canvas>
+          </div>
+
+          <!-- Data Table -->
+          <div class="table-card">
+            <h4>📋 Detailed Comparison</h4>
+            <div class="table-container">
+              <table id="resultsTable">
+                <thead>
+                  <tr>
+                    <th>Technology</th>
+                    <th>g CO₂/km</th>
+                    <th>kg CO₂/year</th>
+                  </tr>
+                </thead>
+                <tbody><!-- populated by JS --></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Savings Card -->
+          <div class="savings-card">
+            <h4>💡 Emission Savings</h4>
+            <div class="savings-content">
+              <div class="savings-value" id="savingsMessage">
+                Calculate to see potential savings
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ Section -->
+      <section id="faq" class="faq-section">
+        <div class="container">
+          <div class="calculator-card faq-card">
+            <div class="card-header">
+              <h3 class="card-title">❓ FAQ & Methodology</h3>
+              <p class="card-subtitle">Formulas used, units to enter, and typical values</p>
+            </div>
+            <div class="card-content">
+              <div class="faq-list">
+                <details open class="faq-item">
+                  <summary>What should I enter in each field?</summary>
+                  <ul>
+                    <li><b>State of Use</b>: Select your State/UT (sets grid EF for EVs).</li>
+                    <li><b>Vehicle Type</b>: 2W, 3W, 4W, Bus.</li>
+                    <li><b>Manufacturing Year</b>: Shown in results summary (not used in math).</li>
+                    <li><b>Scenario Year</b>: 2025/2030/2070. Drives grid EF and the Year chart.</li>
+                    <li><b>Daily Distance</b>: Average daily km (tool multiplies by 365).</li>
+                    <li><b>ICE Efficiency</b>: km/L of your ICE vehicle.</li>
+                    <li><b>EV Efficiency</b>: kWh/km (if Wh/km, divide by 1000).</li>
+                    <li><b>Primary Fuel</b>: Petrol or Diesel baseline for comparison.</li>
+                  </ul>
+                </details>
+
+                <details class="faq-item" open>
+                  <summary>How do you calculate EV emissions?</summary>
+                  <p>EV g/km = EV kWh/km × State EF (g/kWh)</p>
+                  <p>EV g/year = (EV g/km) × (Daily km × 365)</p>
+                </details>
+
+                <details class="faq-item" open>
+                  <summary>How do you calculate Petrol/Diesel emissions?</summary>
+                  <p>g/km = (1 / km/L) × (Fuel EF g/L) × 1.15</p>
+                  <ul>
+                    <li>Petrol = 2271 g/L; Diesel = 2653 g/L</li>
+                    <li>+15% accounts for upstream emissions.</li>
+                  </ul>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer"></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
