@@ -20,8 +20,7 @@ const loadingSpinner = submitBtn.querySelector('.loading-spinner');
 // Form inputs
 const stateInput = document.getElementById('state');
 const vehicleTypeInput = document.getElementById('vehicleType');
-const mfgYearInput = document.getElementById('mfgYear');           // Manufacturing Year (display only)
-const scenarioYearInput = document.getElementById('scenarioYear'); // Scenario Year (drives EF)
+const scenarioYearInput = document.getElementById('scenarioYear'); // drives EF
 const distanceInput = document.getElementById('distance');
 const efficiencyInput = document.getElementById('efficiency');
 const evEfficiencyInput = document.getElementById('evEfficiency');
@@ -39,7 +38,6 @@ function initializeTheme() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   setTheme(savedTheme);
 }
-
 function setTheme(theme) {
   if (theme === 'light') {
     body.classList.add('light-mode');
@@ -53,7 +51,6 @@ function setTheme(theme) {
     localStorage.setItem('theme', 'dark');
   }
 }
-
 function toggleTheme() {
   const isLight = body.classList.contains('light-mode');
   setTheme(isLight ? 'dark' : 'light');
@@ -66,8 +63,7 @@ function toggleTheme() {
 function createParticles() {
   const particlesContainer = document.getElementById('particles');
   if (!particlesContainer) return;
-  const particleCount = 15;
-  for (let i = 0; i < particleCount; i++) {
+  for (let i = 0; i < 15; i++) {
     const p = document.createElement('div');
     p.className = 'particle';
     p.style.left = Math.random() * 100 + '%';
@@ -143,23 +139,22 @@ const defaultStateEmissionFactor = {
   "Puducherry": 934
 };
 
-// Multi-year EF holders
+// Multi-year EF maps
 const stateEF_2025 = defaultStateEmissionFactor;
-
-// We will load 2030 from your list (kg/kWh → ×1000)
 let stateEF_2030 = {};
-
-// 2070 = 0 for all states (as requested)
+let stateEF_2050 = {};
+// 2070 = 0 for all states (requested)
 const ZERO_FOR_ALL_STATES = Object.keys(defaultStateEmissionFactor)
   .reduce((acc, k) => (acc[k] = 0, acc), {});
 
 const stateEmissionFactorsByYear = {
   "2025": stateEF_2025,
   "2030": stateEF_2030,
+  "2050": stateEF_2050,
   "2070": ZERO_FOR_ALL_STATES
 };
 
-// Consistent order to paste your 2030 list
+// Consistent order to paste 2030/2050 lists
 const STATES_UTS_ORDER = [
   "Andaman & Nicobar Islands","Andhra Pradesh","Arunachal Pradesh","Assam","Bihar",
   "Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka",
@@ -169,20 +164,33 @@ const STATES_UTS_ORDER = [
   "Jammu & Kashmir","Lakshadweep","Ladakh","Puducherry"
 ];
 
-// Quickly load your 2030 values (kg/kWh list in the exact order above)
+// Load 2030 values (kg/kWh list in order) → g/kWh map
 function apply2030ValuesKgPerKWh(listInKgPerKWh) {
   const map = {};
   const n = Math.min(listInKgPerKWh.length, STATES_UTS_ORDER.length);
   for (let i = 0; i < n; i++) {
     const kg = Number(listInKgPerKWh[i]);
-    if (Number.isFinite(kg)) map[STATES_UTS_ORDER[i]] = Math.round(kg * 1000); // to g/kWh
+    if (Number.isFinite(kg)) map[STATES_UTS_ORDER[i]] = Math.round(kg * 1000);
   }
   stateEF_2030 = map;
   stateEmissionFactorsByYear["2030"] = stateEF_2030;
 }
 
-// TODO: Paste your 2030 values (kg/kWh) in the same order and uncomment.
-// apply2030ValuesKgPerKWh([ /* 37 kg/kWh values in order */ ]);
+// Load 2050 values (kg/kWh list in order) → g/kWh map
+function apply2050ValuesKgPerKWh(listInKgPerKWh) {
+  const map = {};
+  const n = Math.min(listInKgPerKWh.length, STATES_UTS_ORDER.length);
+  for (let i = 0; i < n; i++) {
+    const kg = Number(listInKgPerKWh[i]);
+    if (Number.isFinite(kg)) map[STATES_UTS_ORDER[i]] = Math.round(kg * 1000);
+  }
+  stateEF_2050 = map;
+  stateEmissionFactorsByYear["2050"] = stateEF_2050;
+}
+
+// NOTE: Paste your 2030 and 2050 values (kg/kWh) below in the exact order above and uncomment.
+// apply2030ValuesKgPerKWh([ /* 37 kg/kWh values for 2030 in order */ ]);
+// apply2050ValuesKgPerKWh([ /* 37 kg/kWh values for 2050 in order */ ]);
 
 // Fuel EFs (g/L)
 const defaultFuelEmissionFactor = {
@@ -195,18 +203,17 @@ const defaultFuelEmissionFactor = {
 // =====================
 function normalizeScenarioYear(raw) {
   const y = String(raw || '').trim();
-  return (y === '2030' || y === '2070') ? y : '2025';
+  return (y === '2030' || y === '2050' || y === '2070') ? y : '2025';
 }
-
 function getStateEF(state, year) {
   const y = normalizeScenarioYear(year);
   const map = stateEmissionFactorsByYear[y];
   const ef = map && map[state];
   if (ef != null) return ef;
+  // fallback to 2025 value for that state, else India average
   return stateEF_2025[state] ?? INDIA_AVG_G_PER_KWH_2024;
 }
-
-// Converts user EV input to kWh/km; if user enters Wh/km (>5), auto-convert
+// EV kWh/km (auto-convert Wh/km if value > 5)
 function normalizeEvEffKWhPerKm(raw) {
   let e = Number(raw);
   if (!Number.isFinite(e) || e <= 0) return 0;
@@ -218,7 +225,7 @@ function normalizeEvEffKWhPerKm(raw) {
 // =====================
 function validateForm() {
   const requiredFields = [
-    stateInput, vehicleTypeInput, mfgYearInput, scenarioYearInput,
+    stateInput, vehicleTypeInput, scenarioYearInput,
     distanceInput, efficiencyInput, evEfficiencyInput, fuelTypeInput
   ];
   for (let field of requiredFields) {
@@ -230,16 +237,14 @@ function validateForm() {
   }
   return true;
 }
-
 function getFormData() {
   return {
     state: stateInput.value,
     vehicleType: vehicleTypeInput.value,
-    mfgYear: mfgYearInput.value,                             // shown in results
-    scenarioYear: normalizeScenarioYear(scenarioYearInput.value), // used in EF
-    distance: parseFloat(distanceInput.value),               // daily km
-    efficiency: parseFloat(efficiencyInput.value),           // km/L
-    evEfficiency: parseFloat(evEfficiencyInput.value),       // kWh/km (or Wh/km auto-converted)
+    scenarioYear: normalizeScenarioYear(scenarioYearInput.value),
+    distance: parseFloat(distanceInput.value),                // daily km
+    efficiency: parseFloat(efficiencyInput.value),            // km/L
+    evEfficiency: parseFloat(evEfficiencyInput.value),        // kWh/km (or Wh/km)
     fuelType: fuelTypeInput.value
   };
 }
@@ -248,21 +253,16 @@ function getFormData() {
 // Core calculations
 // =====================
 function calculateEmissions(input) {
-  // Use Scenario Year for grid EF (not Manufacturing Year)
   const stateEF = getStateEF(input.state, input.scenarioYear);
-
-  // EV efficiency
   const evEffKWhPerKm = normalizeEvEffKWhPerKm(input.evEfficiency);
-
-  // Distance: daily → annual
   const annualDistanceKm = (Number(input.distance) || 0) * 365;
 
-  // EV emissions
+  // EV
   const evPerKm = evEffKWhPerKm * stateEF;       // g/km
-  const annualEvG  = evPerKm * annualDistanceKm; // g/year
-  const annualEvKg = annualEvG / 1000;           // kg/year
+  const annualEvG  = evPerKm * annualDistanceKm; // g/yr
+  const annualEvKg = annualEvG / 1000;
 
-  // Petrol emissions (km/L → g/km), with 15% upstream uplift
+  // Petrol
   const petrolEffKmPerL = input.vehicleType === "bus" ? 0 : Number(input.efficiency);
   const petrol_g_per_km = petrolEffKmPerL > 0
     ? (1 / petrolEffKmPerL) * defaultFuelEmissionFactor.petrol * 1.15
@@ -270,7 +270,7 @@ function calculateEmissions(input) {
   const annualPetrolG  = petrol_g_per_km * annualDistanceKm;
   const annualPetrolKg = annualPetrolG / 1000;
 
-  // Diesel emissions (km/L → g/km). Bus default = 2.6 km/L if not given.
+  // Diesel (bus default if not provided)
   const dieselEffKmPerL = input.vehicleType === "bus"
     ? (Number(input.efficiency) > 0 ? Number(input.efficiency) : 2.6)
     : Number(input.efficiency);
@@ -286,7 +286,6 @@ function calculateEmissions(input) {
     { label: "Diesel", gPerKm: diesel_g_per_km, annualG: annualDieselG,  annualKg: annualDieselKg }
   ];
 
-  // Savings message vs chosen fuel (per‑km basis)
   const ref = input.fuelType === "petrol" ? petrol_g_per_km : diesel_g_per_km;
   const reduction = ref > 0 ? ((ref - evPerKm) / ref) * 100 : 0;
   const savingsMsg = reduction > 0
@@ -302,7 +301,7 @@ function calculateEmissions(input) {
 function displayResults(calculationResults) {
   const { results, savings } = calculationResults;
 
-  // Update table
+  // Table
   resultsTable.innerHTML = '';
   results.forEach(result => {
     const row = resultsTable.insertRow();
@@ -313,15 +312,15 @@ function displayResults(calculationResults) {
     `;
   });
 
-  // Update savings message
+  // Savings
   savingsMessage.textContent = savings;
 
-  // Run summary (includes Manufacturing Year)
+  // Run summary
   const inputNow = getFormData();
   if (runMetaEl) {
     runMetaEl.textContent =
-      `State: ${inputNow.state} | Scenario: ${inputNow.scenarioYear} | Manufacturing Year: ${inputNow.mfgYear} | ` +
-      `Daily: ${distanceInput.value} km | ICE: ${efficiencyInput.value} km/L | EV: ${evEfficiencyInput.value} kWh/km`;
+      `State: ${inputNow.state} | Scenario: ${inputNow.scenarioYear} | Daily: ${distanceInput.value} km | ` +
+      `ICE: ${efficiencyInput.value} km/L | EV: ${evEfficiencyInput.value} kWh/km`;
   }
 
   // Tech comparison chart
@@ -357,12 +356,12 @@ function displayResults(calculationResults) {
     });
   }
 
-  // Year comparison chart
+  // Year comparison chart (2025 / 2030 / 2050 / 2070)
   const yearsCanvas = document.getElementById('yearsChart');
   if (yearsCanvas) {
     const evEffKWhPerKm = normalizeEvEffKWhPerKm(inputNow.evEfficiency);
+    const years = ['2025', '2030', '2050', '2070'];
 
-    const years = ['2025', '2030', '2070'];
     const evByYear = years.map(y => evEffKWhPerKm * getStateEF(inputNow.state, y));
 
     const petrolRow = results.find(r => r.label === 'Petrol');
@@ -370,8 +369,8 @@ function displayResults(calculationResults) {
     const petrolKm = petrolRow ? petrolRow.gPerKm : 0;
     const dieselKm = dieselRow ? dieselRow.gPerKm : 0;
 
-    const petrolByYear = years.map(() => petrolKm);
-    const dieselByYear = years.map(() => dieselKm);
+    const petrolByYear = years.map(() => petrolKm); // unchanged across years
+    const dieselByYear = years.map(() => dieselKm); // unchanged across years
 
     if (yearsChart) yearsChart.destroy();
 
@@ -433,6 +432,14 @@ function refreshChartsTheme() {
 // =====================
 // Form handling
 // =====================
+function recalcAndDisplayIfVisible() {
+  if (resultsSection.style.display !== 'none' && !isCalculating) {
+    const data = getFormData();
+    const results = calculateEmissions(data);
+    displayResults(results);
+  }
+}
+
 async function handleFormSubmit(e) {
   e.preventDefault();
   if (isCalculating) return;
@@ -440,14 +447,11 @@ async function handleFormSubmit(e) {
 
   setCalculatingState(true);
   try {
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 400));
     const formData = getFormData();
     const results = calculateEmissions(formData);
     displayResults(results);
-    showNotification(
-      `Calculation done for ${formData.state} (Scenario ${formData.scenarioYear}, Mfg ${formData.mfgYear}).`,
-      'success'
-    );
+    showNotification(`Calculated for ${formData.state} (Scenario ${formData.scenarioYear}).`, 'success');
   } catch (err) {
     console.error('Calculation error:', err);
     showNotification('There was an error calculating emissions. Please try again.', 'error');
@@ -455,6 +459,10 @@ async function handleFormSubmit(e) {
     setCalculatingState(false);
   }
 }
+
+// Auto-update graphs when Scenario Year changes (no need to press Calculate again)
+scenarioYearInput?.addEventListener('change', recalcAndDisplayIfVisible);
+stateInput?.addEventListener('change', recalcAndDisplayIfVisible);
 
 // =====================
 // Notifications
@@ -516,7 +524,6 @@ document.addEventListener('DOMContentLoaded', function () {
   form.addEventListener('submit', handleFormSubmit);
   themeToggle.addEventListener('click', toggleTheme);
 
-  // Hover lifts
   const cards = document.querySelectorAll('.calculator-card, .chart-card, .table-card, .savings-card');
   cards.forEach(card => {
     card.addEventListener('mouseenter', function () {
@@ -527,3 +534,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+apply2030ValuesKgPerKWh([
+  // Andaman & Nicobar Islands
+  0,
+  // Andhra Pradesh → Puducherry (in order)
+  0.898423256, 0, 0.921635988, 0.966367855, 0.972706993, 0,
+  1.033086489, 1.026880955, 0, 0.955981736, 0.878828836, 0,
+  0.956050356, 1.027170656, 0, 0, 0, 0,
+  0.910898989, 0.944724643, 0.8891024, 0, 0.917677072,
+  0.933219905, 0.911475381, 0.939734867, 0.53709137, 0.96330823,
+  0, 0, 0.868101399, 0, 0, 0, 0.88065996
+]);
+apply2050ValuesKgPerKWh([
+  // Andaman & Nicobar Islands
+  0,
+  // Andhra Pradesh → Puducherry (in order)
+  0.588059, 0, 0.603253, 0.632532, 0.636681, 0,
+  0.676202, 0.67214, 0, 0.625734, 0.575233, 0,
+  0.625778, 0.67233, 0, 0, 0, 0,
+  0.596225, 0.618365, 0.581958, 0, 0.600661,
+  0.610835, 0.596602, 0.615099, 0.351551, 0.630529,
+  0, 0, 0.568212, 0, 0, 0, 0.576432
+]);
