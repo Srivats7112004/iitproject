@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body>
   <!-- Theme Toggle Button -->
@@ -127,20 +127,6 @@
                     </select>
                   </div>
 
-                  <!-- Manufacturing Year (displayed in results) -->
-                  <div class="form-group">
-                    <label for="mfgYear">Manufacturing Year</label>
-                    <select id="mfgYear" name="mfgYear" required>
-                      <option value="">Select year</option>
-                      <option value="2020">2020</option>
-                      <option value="2021">2021</option>
-                      <option value="2022">2022</option>
-                      <option value="2023">2023</option>
-                      <option value="2024" selected>2024</option>
-                      <option value="2025">2025</option>
-                    </select>
-                  </div>
-
                   <!-- Scenario Year (drives grid EF) -->
                   <div class="form-group">
                     <label for="scenarioYear">Scenario Year</label>
@@ -148,6 +134,7 @@
                       <option value="">Select scenario</option>
                       <option value="2025" selected>2025</option>
                       <option value="2030">2030</option>
+                      <option value="2050">2050</option>
                       <option value="2070">2070</option>
                     </select>
                   </div>
@@ -196,7 +183,7 @@
         <div class="results-header">
           <h3>Emission Comparison Results</h3>
           <p>Based on your inputs, here's how different vehicle technologies compare</p>
-          <p id="runMeta"></p><!-- run summary line -->
+          <p id="runMeta"></p>
         </div>
 
         <div class="results-grid">
@@ -208,7 +195,7 @@
 
           <!-- Year Comparison Chart -->
           <div class="chart-card">
-            <h4>⏳ Emissions by Year (2025 / 2030 / 2070)</h4>
+            <h4>⏳ Emissions by Year (2025 / 2030 / 2050 / 2070)</h4>
             <canvas id="yearsChart" width="400" height="300"></canvas>
           </div>
 
@@ -241,7 +228,7 @@
         </div>
       </section>
 
-      <!-- FAQ Section -->
+      <!-- FAQ (unchanged) -->
       <section id="faq" class="faq-section">
         <div class="container">
           <div class="calculator-card faq-card">
@@ -256,8 +243,7 @@
                   <ul>
                     <li><b>State of Use</b>: Select your State/UT (sets grid EF for EVs).</li>
                     <li><b>Vehicle Type</b>: 2W, 3W, 4W, Bus.</li>
-                    <li><b>Manufacturing Year</b>: Shown in results summary (not used in math).</li>
-                    <li><b>Scenario Year</b>: 2025/2030/2070. Drives grid EF and the Year chart.</li>
+                    <li><b>Scenario Year</b>: 2025/2030/2050/2070. Drives grid EF and the Year chart.</li>
                     <li><b>Daily Distance</b>: Average daily km (tool multiplies by 365).</li>
                     <li><b>ICE Efficiency</b>: km/L of your ICE vehicle.</li>
                     <li><b>EV Efficiency</b>: kWh/km (if Wh/km, divide by 1000).</li>
@@ -288,7 +274,6 @@
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="footer"></footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
